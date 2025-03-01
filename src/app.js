@@ -103,10 +103,5 @@ window.paypal
                 );
             }
         } ,
-
-        onCancel: (data) => {
-            // Show a cancel page or return to cart
-            window.location.assign("/your-error-page-here");
-        } ,
     })
     .render("#paypal-button-container"); 
