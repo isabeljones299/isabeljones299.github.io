@@ -1,3 +1,21 @@
+async function getAccessToken() {
+    const clientId = "ATfOUfqHENmfz9QSyjxtxg0NE50JEsPeLRPUCIJ8q5H2acKil2kxxayTBwfKkeskz8mZdjLw5XB-wBOH";
+    const clientSecret = "EBHLLIjp3yFwi0xO8TtT5-P1zvUOqL35hvR9dzQBhEPcpupH6WDqrTWyyuRXfphixAc2YUF-yQNucJN5";
+
+    const response = await fetch("https://api-m.sandbox.paypal.com/v1/oauth2/token", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": "Basic " + btoa(`${clientId}:${clientSecret}`),
+        },
+        body: "grant_type=client_credentials",
+    });
+
+    const data = await response.json();
+    return data.access_token;
+}
+
+
 window.paypal
     .Buttons({
         style: {
@@ -7,25 +25,30 @@ window.paypal
             label: "paypal",
         },
         message: {
-            amount: 100,
+            amount: 0.01,
         } ,
-
+        
         async createOrder() {
             try {
-                const response = await fetch("/api/orders", {
+                const accessToken = await getAccessToken();
+        
+                const response = await fetch("https://api-m.sandbox.paypal.com/v2/checkout/orders", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
+                        "Authorization": `Bearer ${accessToken}`,
                     },
                     // use the "body" param to optionally pass additional order information
                     // like product ids and quantities
                     body: JSON.stringify({
-                        cart: [
-                            {
-                                id: "YOUR_PRODUCT_ID",
-                                quantity: "YOUR_PRODUCT_QUANTITY",
-                            },
-                        ],
+                        "intent": "CAPTURE",
+                        "purchase_units": [{
+                            "amount": {
+                                "currency_code": "GBP",
+                                "value": "0.01",
+                            }
+                        }
+                    ]
                     }),
                 });
 
@@ -48,16 +71,17 @@ window.paypal
 
         async onApprove(data, actions) {
             try {
+                const accessToken = await getAccessToken();
                 const response = await fetch(
                     `/api/orders/${data.orderID}/capture`,
                     {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
+                            "Authorization": `Bearer ${accessToken}`,
                         },
                     }
                 );
-
                 const orderData = await response.json();
                 // Three cases to handle:
                 //   (1) Recoverable INSTRUMENT_DECLINED -> call actions.restart()
@@ -69,10 +93,12 @@ window.paypal
                 if (errorDetail?.issue === "INSTRUMENT_DECLINED") {
                     // (1) Recoverable INSTRUMENT_DECLINED -> call actions.restart()
                     // recoverable state, per
+
                     // https://developer.paypal.com/docs/checkout/standard/customize/handle-funding-failures/
                     return actions.restart();
                 } else if (errorDetail) {
                     // (2) Other non-recoverable errors -> Show a failure message
+
                     throw new Error(
                         `${errorDetail.description} (${orderData.debug_id})`
                     );
@@ -80,7 +106,8 @@ window.paypal
                     throw new Error(JSON.stringify(orderData));
                 } else {
                     // (3) Successful transaction -> Show confirmation or thank you message
-                    // Or go to another URL:  actions.redirect('thank_you.html');
+                    // Or go to another URL:  
+                   // actions.redirect('thank_you.html');
                     const transaction =
                         orderData?.purchase_units?.[0]?.payments
                             ?.captures?.[0] ||

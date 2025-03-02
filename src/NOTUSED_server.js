@@ -14,11 +14,14 @@ import bodyParser from "body-parser";
 const app = express();
 app.use(bodyParser.json());
 
-const {
+/*const {
     PAYPAL_CLIENT_ID,
     PAYPAL_CLIENT_SECRET,
-    PORT = 8080,
-} = process.env;
+    PORT = 5500,
+} = process.env;*/
+const PAYPAL_CLIENT_ID =  "ATfOUfqHENmfz9QSyjxtxg0NE50JEsPeLRPUCIJ8q5H2acKil2kxxayTBwfKkeskz8mZdjLw5XB-wBOH";
+const PAYPAL_CLIENT_SECRET = "EBHLLIjp3yFwi0xO8TtT5-P1zvUOqL35hvR9dzQBhEPcpupH6WDqrTWyyuRXfphixAc2YUF-yQNucJN5";
+const PORT = 5500;
 
 const client = new Client({
     clientCredentialsAuthCredentials: {
@@ -48,7 +51,7 @@ const createOrder = async (cart) => {
                 {
                     amount: {
                         currencyCode: "GBP",
-                        value: "100",
+                        value: "0.01",
                     },
                 },
             ],
